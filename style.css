@@ -18,10 +18,13 @@
 
 /********** banner at top of page **********/
 .d-header {
-    height: 4em;
+    height: 3.333em;  /* slightly thinner header (default is 4em) */
     background: linear-gradient(var(--header-bg-top), var(--header-bg-bot));
     border-bottom: var(--section-border-width) solid var(--header-border);
     box-shadow: var(--header-shadow);
+}
+.d-header .wrap {
+    padding: 0 0.333em;  /* less left/right padding on header edges */
 }
 /* prevent bottom of page title from getting cropped */
 .extra-info-wrapper .header-title a {
@@ -36,6 +39,11 @@
 /* number in a circle, when there are new notifications */
 .d-header-icons .unread-notifications {
     background-color: var(--tertiary-med-or-tertiary);
+}
+.d-header-icons .badge-notification {
+    top: -0.15em;
+    right: -0.333em;
+    border: none;
 }
 .d-header-icons a:hover {
     background-color: var(--header-icon-bg-hover) !important;
@@ -108,6 +116,27 @@ div.p1-banner, div.p2-banner, div.p3-banner, div.house-banner {
 }
 
 /********** thread posts / comments **********/
+/* fade in new posts */
+@keyframes post-highlight-anim {
+    from {
+        filter: hue-rotate(-60deg)
+                saturate(50%)
+                contrast(50%)
+                opacity(1%);
+    }
+}
+article:has(.highlighted) {
+    /* style the entire post, not just part */
+    filter: none;
+    animation: post-highlight-anim 1s ease-out !important;
+}
+.topic-body.highlighted {
+    /* un-style inner post (the "highlighted" part) */
+    /* because it looks wrong with only part of a post animated */
+    background: transparent !important;
+    animation: none !important;
+}
+
 /* some posts get a bogus min-height style, unsure why */
 div.topic-post {
     min-height: 0px !important;
@@ -120,7 +149,7 @@ article, /* regular post */
 article.boxed, /* mobile version (?) */
 .user-stream .item, /* user activity feed */
 .search-results .fps-result, /* search widget item */
-.d-toc-main, /* table of contents on first post */
+#d-toc, /* table of contents on first post */
 .presence-users, /* pops up when someone is writing a reply */
 div.dummy-placeholder {
     border: 1px outset var(--post-def-hl);
@@ -132,6 +161,15 @@ div.dummy-placeholder {
 }
 .topic-list-item td:first-child, .topic-post {
     border-left: none; /* override keyboard_shortcuts.scss:3 */
+}
+/* "thread locked" mini-post is like a post, but undecorated */
+.small-action {
+    padding: var(--post-padding);
+    margin: 0px 0px 10px 0px;
+}
+.small-action .small-action-desc {
+    padding: 0;
+    margin: 0;
 }
 
 /* extra messages at top of post, like "it's been a while since we saw this user" */
@@ -157,7 +195,11 @@ div.dummy-placeholder {
     box-shadow: var(--post-widget-shadows);
     border: 1px outset var(--avatar-hl);
     border-radius: 6px;
-    padding: 5px 6px 6px 5px;
+    /* some places say 45px, some say 48px, this seems necessary as a workaround */
+    /* unsure why padding is uneven, but this fixes it */
+    width: var(--topic-avatar-width);
+    height: var(--topic-avatar-width);
+    padding: 4px 4px 4px 4px;
     /* important because some posts explicitly set a huge bottom margin */
     margin: 0px 8px 0px 0px !important;
     transition: var(--hover-anim-time);
@@ -165,11 +207,25 @@ div.dummy-placeholder {
 .embedded-posts .topic-avatar,
 div.avatar-wrapper,
 .presence-avatars, /* when someone is writing a reply */
+.small-action .topic-avatar, /* the lock icon in a "thread locked" mini-post */
 div.dummy-placeholder {
     border-radius: 5px;
     padding: 3px 4px 4px 3px;
     margin: 0 6px 0 0 !important;
     transition: var(--hover-anim-time);
+}
+.small-action .topic-avatar,
+.presence-avatars,
+.chat-message-avatar,
+div.dummy-placeholder {
+    width: unset;
+    height: unset;
+}
+/* don't draw a background around "thread locked" icon */
+.small-action .topic-avatar, .small-action .topic-avatar:hover {
+    background: none;
+    border: none;
+    box-shadow: none;
 }
 div.topic-avatar:hover, /* main post avatar */
 .embedded-posts .topic-avatar:hover, /* embedded post avatar */
@@ -184,6 +240,7 @@ div.dummy-placeholder {
 }
 img.avatar {
     border-radius: 0.15em;
+    border: unset !important; /* override parent theme */
 }
 .avatar-wrapper {
     /* remove blue circle behind avatar in user activity stream */
@@ -300,8 +357,12 @@ img.avatar {
 }
 
 /* remove extra space at bottom of comments */
-section.post-menu-area, section.post-actions {
-    margin: 0px;
+section.post-menu-area,
+section.post-actions,
+.archetype-private_message .post-menu-area,
+foo {
+    margin: 0;
+    padding: 0;
 }
 
 /* reduce extra space around buttons at bottom of comments */
@@ -421,6 +482,7 @@ aside.onebox header {
 }
 .onebox article {
     margin: 0;
+    overflow: auto;
 }
 .onebox .label1 {
     /* override onebox.scss:748 */
@@ -498,7 +560,8 @@ span.highlighted {
 /********** "topic map" at bottom of first post **********/
 .topic-map, .archetype-private_message .topic-map {
     padding: 0;
-    margin: 0.5em 0 0 -4.2em;
+    /* left overflows by avatar size plus 2x4px padding + 2x1px border + 8px margin */
+    margin: 0.5em 0 0 calc(0em - var(--topic-avatar-width) - 8px - 2px - 8px);
     border-radius: 8px;
     border: 1px outset var(--topic-map-bg);
     background: var(--topic-map-bg);
@@ -536,9 +599,17 @@ span.highlighted {
 .archetype-private_message .current-user-post:not(.moderator) .topic-body .cooked {
     background: none;
 }
+/* remove parent theme styling */
 .archetype-private_message .topic-body .cooked,
-.archetype-private_message .current-user-post .topic-body .cooked {
-    border: none;
+.archetype-private_message .current-user-post .topic-body .cooked,
+.archetype-private_message .current-user-post .regular.contents,
+.archetype-private_message .regular.contents,
+foo {
+    border: unset !important;
+    background-color: unset !important;
+    border-radius: unset !important;
+    padding-left: unset !important;
+    margin-left: unset !important;
 }
 .archetype-private_message .topic-body .cooked {
     margin: 0;
@@ -550,6 +621,17 @@ span.highlighted {
 /* remove extra space between messages on mobile */
 .archetype-private_message .topic-post {
     margin: 0;
+}
+.archetype-private_message .topic-post article .post-infos::before,
+.archetype-private_message .reply-to .action-title::after
+{
+    display: inline;
+    content: "private message";
+    margin: 0 0.5em 0 0;
+    font-size: 80%;
+    font-style: italic;
+    font-weight: unset;
+    background-color: unset;
 }
 
 /********** blank space below thread **********/
@@ -665,12 +747,19 @@ textarea:focus, .d-editor-textarea-wrapper.in-focus textarea, .d-editor-textarea
 }
 
 /********** user info pop-up widget **********/
+/* background behind user card */
+.fk-d-menu__inner-content {
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+}
 .user-card.show, .group-card.show {
-    border-radius: var(--post-border-radius);
+    /* parent theme uses !important, dammit ... don't do that! */
+    border-radius: var(--post-border-radius) !important;
     background: linear-gradient(var(--post-def-top), var(--post-def-bot));
     outline: none;
     border: 3px outset var(--post-def-hl);
-    box-shadow: 0.5em 1.5em 2em var(--shadow-color);
+    box-shadow: 0.5em 1.5em 2em var(--shadow-color) !important;
 }
 .user-card .card-content,
 .group-card .card-content,
@@ -753,7 +842,11 @@ div.dummy-placeholder {
 
 /********** Topic List widget(s) **********/
 /* "Suggested Topics" widget at bottom of pages */
-.suggested-topics, /* topic list at bottom of threads */
+.more-content-topics, /* general catch-all */
+.suggested-topics, #suggested-topics,
+.related-topics, #related-topics,
+.related-messages, #related-messages,
+.topic-above-suggested-outlet.related-topics, /* as specified in parent theme */
 #list-area .contents, /* front page topic list */
 .paginated-topics-list, /* private message list */
 .directory-table-container, /* user list */
@@ -818,12 +911,62 @@ tbody {
 #suggested-topics td.main-link {
     width: unset; /* parent theme limits this and it messes with layout */
 }
+/* list of participants / poster avatars */
+/* narrower column header */
+.topic-list .posters {
+    width: unset;
+}
+.topic-list th.posters {
+    text-align: center;
+}
+/* Replace "Participants" with something shorter */
+th.posters span {
+    display: none;
+}
+th.posters:after {
+    content: "Who";
+}
+.user-messages-page .posters a:after {
+    /* don't show username next to avatar in posters cell */
+    display: none;
+}
+.topic-list .topic-list-data.posters {
+    height: unset;
+}
+/* keep participants on one line unless there's a bunch */
+.topic-list td.posters {
+    min-width: 58px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 2px;
+    overflow: hidden;
+}
+.posters a.latest {
+    width: unset !important;
+}
+/* unset parent theme stuff */
+.topic-list .posters a:first-child .avatar.latest:not(.single) {
+    box-shadow: unset;
+    border: unset;
+    position: unset;
+    left: unset;
+}
+.topic-list .posters>a {
+    margin-right: unset;
+}
+.topic-list .topic-list-data.posters a:not(.latest) {
+    display: inline-block !important;
+}
+/* thread author */
 .topic-list .creator, .topic-list .editor {
     margin: 0 0.1em 0 0;
     /* display: inline; */
     float: right;
 }
-.topic-list .badge-wrapper.bullet {  /* forum category */
+.topic-list .badge-wrapper.bullet,
+.topic-list .badge-category {  /* forum category */
     display: none;
     /* float: right; */
 }
@@ -836,6 +979,14 @@ tbody {
     color: var(--primary-medium);
 }
 
+/* Narrower "num replies" column */
+.topic-list .posts {
+    width: unset !important;
+}
+.topic-list th.posts span:after {
+    content: " ";  /* add a gap between columns */
+    margin: 0.25em;
+}
 /* num-posts cell uses colors to indicate "posts-to-likes" ratio */
 .topic-list .num .badge-posts {
     padding: 0px 5px;
@@ -873,6 +1024,17 @@ tbody {
 .poster-info {
     /* 100% - img.avatar:width - .poster-avatar:margin-right - 2px */
     width: calc(100% - 1.5em - 7px);
+}
+/* remove last-poster avatar in privmsg topic maps because it has a posters list */
+.user-messages-page .last-post .poster-avatar,
+#related-messages .last-post .poster-avatar,
+foo {
+    display: none;
+}
+.user-messages-page .poster-info,
+#related-messages .poster-info,
+foo {
+    width: calc(100% - 2px);
 }
 .topic-list .topic-list-data, .topic-list .creator a, .topic-list .editor a {
     color: var(--quaternary);
@@ -1155,7 +1317,9 @@ li.active,
 
 /********** misc buttons **********/
 /* lots of site buttons */
-.btn {
+.btn, /* regular buttons */
+.cc-btn, /* cookie compliance button */
+foo {
     border-radius: var(--button-border-radius);
     border: 1px outset var(--button-border);
     background: var(--button-bg);
@@ -1180,6 +1344,11 @@ li.active,
 .quote-button {
     box-shadow: var(--hover-shadow-args);
     transition: var(--hover-anim-time);
+    background: var(--sidebar-color);
+}
+.quote-button .btn:hover {
+    background: var(--header-bg-top) !important;
+    color: var(--header_primary) !important;
 }
 .btn-danger, .btn-danger .d-icon {
     color: var(--danger);  /* why does the parent theme not already do this?? */
@@ -1255,7 +1424,11 @@ li.active,
     padding-left: 0.75em;
 }
 /* bottom right corner version */
-#topic-progress {
+/* (parent theme is really weirdly specific about overriding this) */
+#topic-progress,
+.container.posts #topic-progress-wrapper #topic-progress,
+.container.posts #topic-progress-wrapper .topic-admin-menu-button-container+#topic-progress,
+foo {
     border-radius: 12px;
     background: var(--secondary);
     color: var(--progress-text-color);
@@ -1460,6 +1633,25 @@ div.poll li[data-poll-option-id]:hover {
     background: linear-gradient(var(--post-embed-top), var(--post-embed-bot));
 }
 
+/********** cookie / privacy policy dialog box **********/
+.cc-banner.cc-bottom {
+    box-shadow: 0em -0.25em 1.5em var(--menu-shadow-color);
+    background: linear-gradient(var(--header-bg-bot), var(--header-bg-top));
+    border-top: var(--section-border-width) solid var(--header-border);
+}
+/* move bottom dialogs to the top? */
+/* .cc-banner.cc-bottom {
+    bottom: unset;
+    top: calc(3.333em - var(--section-border-width));
+    background: linear-gradient(var(--header-bg-top), var(--header-bg-bot));
+    border-bottom: var(--section-border-width) solid var(--header-border);
+    box-shadow: 0em 0.25em 1.5em var(--menu-shadow-color);
+} */
+.cc-window.cc-banner {
+    padding: 0.5em 0.75em;
+    line-height: var(--line-height-medium);
+}
+
 /********** common elements found everywhere **********/
 /* @username mentions */
 a.mention, a.mention-group {
@@ -1534,12 +1726,12 @@ p {
     background: linear-gradient(-45deg, var(--post-op-bar-bot), var(--post-op-bar-top));
     border: 1px outset var(--post-op-bar-top);
 }
-/* table of contents on first post */
-.d-toc-main {
+#d-toc:before { content: "Contents"; }
+#d-toc {
     border: 1px outset var(--post-op-hl);
     background: linear-gradient(var(--post-op-top), var(--post-op-bot));
 }
-.d-toc-main a {
+#d-toc a {
     color: var(--tertiary);
 }
 /* minimized floating button version, style copied from mini timeline widget */
@@ -1608,12 +1800,14 @@ div.dummy-placeholder {
 
 /********** vars **********/
 :root {
-    /* --topic-avatar-width: 85px; */
+    --topic-avatar-width: 48px;
     /* sizing, spacing, etc */
     /* --topic-body-width: 100%; */
     --topic-body-width: 1244px;
     --d-button-border-radius: 12px;
     --below-topic-margin: 0;
+    /* private message formatting */
+    --pm-border-radius: 0;
     /* thread post formatting */
     --post-border-radius: 10px;
     --post-padding: 8px;
